@@ -305,7 +305,7 @@ body {
   border: 2px solid var(--red-bright);
   box-shadow: 0 3px 8px rgba(0,0,0,0.4);
 }
-.piece.cream {
+.piece.cream, .piece.white {
   background: radial-gradient(circle at 35% 35%, #fff, var(--cream), #b89e78);
   border: 2px solid #fff;
   box-shadow: 0 3px 8px rgba(0,0,0,0.4);
@@ -315,7 +315,7 @@ body {
   color: rgba(0,0,0,0.5);
   font-size: inherit;
 }
-.piece.cream.king::after { color: rgba(100,60,20,0.6); }
+.piece.cream.king::after, .piece.white.king::after { color: rgba(100,60,20,0.6); }
 
 /* ───── RESULT OVERLAY ───── */
 .result-overlay {
