@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Checkers Online</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #1a1410;
+  --bg2: #231e18;
+  --bg3: #2e2720;
+  --gold: #c9a84c;
+  --gold-dim: #8a7233;
+  --gold-bright: #e8c95a;
+  --red: #b83a3a;
+  --red-bright: #e04848;
+  --cream: #f0e6d3;
+  --cream-dim: #b8a88e;
+  --dark-tile: #5c3d2e;
+  --light-tile: #d4b896;
+  --dark-tile-hl: #7a5240;
+  --text: #e8dcc8;
+  --text-dim: #9a8b76;
+  --shadow: rgba(0,0,0,0.5);
+}
+
+html, body {
+  width:100%; height:100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Lora', serif;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(201,168,76,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(184,58,58,0.04) 0%, transparent 60%),
+    var(--bg);
+}
+
+/* ───── SCREENS ───── */
+.screen { display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; position:absolute; top:0; left:0; padding:20px; }
+.screen.active { display:flex; }
+
+/* ───── MENU ───── */
+#menuScreen { gap: 30px; }
+
+.logo {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(2.4rem, 7vw, 4rem);
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 2px 20px rgba(201,168,76,0.3);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+.logo-sub {
+  font-family: 'Lora', serif;
+  font-size: clamp(0.8rem, 2.5vw, 1rem);
+  color: var(--text-dim);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-top: -8px;
+}
+
+.menu-btns { display:flex; flex-direction:column; gap:14px; width: min(320px, 85vw); }
+
+.btn {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+  padding: 14px 28px;
+  border: 2px solid var(--gold-dim);
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  transition: all 0.25s;
+  text-transform: uppercase;
+}
+.btn:hover, .btn:focus {
+  background: var(--gold);
+  color: var(--bg);
+  border-color: var(--gold);
+  box-shadow: 0 0 30px rgba(201,168,76,0.2);
+}
+.btn.red { border-color: var(--red); color: var(--red); }
+.btn.red:hover { background: var(--red); color: var(--cream); border-color: var(--red); }
+.btn.small { font-size: 0.75rem; padding: 10px 18px; }
+
+/* ───── PARTY SCREEN ───── */
+#partyScreen { gap: 20px; }
+
+.party-box {
+  background: var(--bg2);
+  border: 1px solid var(--gold-dim);
+  padding: 24px;
+  width: min(400px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.party-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-align: center;
+}
+.party-code {
+  font-family: 'Cinzel', serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--gold-bright);
+  text-align: center;
+  letter-spacing: 0.2em;
+  background: var(--bg3);
+  padding: 10px;
+  border: 1px dashed var(--gold-dim);
+  user-select: all;
+}
+.party-status {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+.party-players {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+}
+.player-slot {
+  flex:1;
+  text-align: center;
+  padding: 12px 8px;
+  border: 1px solid var(--gold-dim);
+  background: var(--bg3);
+}
+.player-slot .label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing:0.1em; margin-bottom:6px; }
+.player-slot .name { font-family:'Cinzel',serif; font-weight:700; color:var(--gold); font-size:0.95rem; }
+.player-slot .name.empty { color: var(--text-dim); font-style:italic; font-weight:400; }
+
+/* ───── JOIN SCREEN ───── */
+#joinScreen { gap: 20px; }
+.input-group { display:flex; flex-direction:column; gap:8px; width: min(320px, 85vw); }
+.input-group label { font-size:0.8rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.15em; }
+.input-group input {
+  font-family: 'Cinzel', serif;
+  font-size: 1.4rem;
+  padding: 12px 16px;
+  background: var(--bg3);
+  border: 2px solid var(--gold-dim);
+  color: var(--gold-bright);
+  text-align: center;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  outline: none;
+}
+.input-group input:focus { border-color: var(--gold); }
+
+/* ───── RULES CONFIG ───── */
+.rules-section { width: min(400px, 90vw); }
+.rules-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  color: var(--gold);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.rule-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bg3);
+}
+.rule-label { font-size: 0.88rem; color: var(--text); max-width: 65%; }
+.rule-desc { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 50px; height: 28px;
+  cursor: pointer;
+}
+.toggle input { opacity:0; width:0; height:0; }
+.toggle .slider {
+  position: absolute;
+  top:0;left:0;right:0;bottom:0;
+  background: var(--bg3);
+  border: 1px solid var(--gold-dim);
+  transition: 0.3s;
+}
+.toggle .slider::before {
+  content:'';
+  position:absolute;
+  width:20px; height:20px;
+  left:3px; top:3px;
+  background: var(--text-dim);
+  transition: 0.3s;
+}
+.toggle input:checked + .slider { background: var(--gold-dim); border-color: var(--gold); }
+.toggle input:checked + .slider::before { transform: translateX(22px); background: var(--gold-bright); }
+.toggle input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
+
+/* ───── GAME SCREEN ───── */
+#gameScreen { gap: 8px; padding: 10px; }
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: min(500px, 95vw);
+  padding: 6px 0;
+}
+.gh-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.gh-piece {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid;
+  flex-shrink: 0;
+}
+.gh-piece.red-p { background: var(--red); border-color: var(--red-bright); }
+.gh-piece.cream-p { background: var(--cream); border-color: #fff; }
+.gh-active { color: var(--gold-bright); text-shadow: 0 0 10px rgba(201,168,76,0.4); }
+.gh-count { font-size:0.75rem; color:var(--text-dim); font-weight:400; }
+
+.turn-banner {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(0.75rem, 2.2vw, 0.95rem);
+  color: var(--gold);
+  text-align: center;
+  min-height: 1.4em;
+  letter-spacing: 0.05em;
+}
+
+/* Board */
+.board-wrap {
+  position: relative;
+  border: 3px solid var(--gold-dim);
+  box-shadow: 0 0 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.3);
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+}
+.cell {
+  width: clamp(36px, 10.5vw, 62px);
+  height: clamp(36px, 10.5vw, 62px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.cell.light { background: var(--light-tile); }
+.cell.dark { background: var(--dark-tile); }
+.cell.highlight {
+  background: var(--dark-tile-hl);
+  cursor: pointer;
+}
+.cell.highlight::after {
+  content: '';
+  width: 30%; height: 30%;
+  background: var(--gold);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.cell.selected { box-shadow: inset 0 0 0 3px var(--gold-bright); }
+
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.3);opacity:1} }
+
+/* Pieces */
+.piece {
+  width: 75%; height: 75%;
+  border-radius: 50%;
+  position: absolute;
+  cursor: pointer;
+  transition: transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(12px, 3vw, 20px);
+}
+.piece:hover { transform: scale(1.08); }
+.piece.red {
+  background: radial-gradient(circle at 35% 35%, var(--red-bright), var(--red), #7a2020);
+  border: 2px solid var(--red-bright);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+.piece.cream {
+  background: radial-gradient(circle at 35% 35%, #fff, var(--cream), #b89e78);
+  border: 2px solid #fff;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+.piece.king::after {
+  content: '♛';
+  color: rgba(0,0,0,0.5);
+  font-size: inherit;
+}
+.piece.cream.king::after { color: rgba(100,60,20,0.6); }
+
+/* ───── RESULT OVERLAY ───── */
+.result-overlay {
+  display: none;
+  position: absolute;
+  top:0;left:0;right:0;bottom:0;
+  background: rgba(10,8,6,0.92);
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.result-overlay.active { display: flex; }
+.result-text {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.6rem, 5vw, 2.8rem);
+  font-weight: 900;
+  color: var(--gold-bright);
+  text-shadow: 0 0 40px rgba(201,168,76,0.4);
+  text-align: center;
+}
+.result-sub { color: var(--text-dim); font-style:italic; text-align:center; }
+
+/* ───── TOAST ───── */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--bg2);
+  border: 1px solid var(--gold-dim);
+  padding: 12px 24px;
+  font-size: 0.85rem;
+  color: var(--gold);
+  z-index: 999;
+  opacity: 0;
+  transition: all 0.4s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity:1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menuScreen" class="screen active">
+  <div class="logo">Checkers</div>
+  <div class="logo-sub">Classic Board Game</div>
+  <div class="menu-btns">
+    <button class="btn" onclick="showCreate()">Create Party</button>
+    <button class="btn" onclick="showJoin()">Join Party</button>
+  </div>
+</div>
+
+<!-- CREATE / LOBBY -->
+<div id="partyScreen" class="screen">
+  <div class="party-box">
+    <div class="party-title">Your Party</div>
+    <div class="party-code" id="partyCode">----</div>
+    <div class="party-status" id="partyStatus">Waiting for opponent…</div>
+    <div class="party-players">
+      <div class="player-slot">
+        <div class="label">Red</div>
+        <div class="name" id="p1Name">You (Host)</div>
+      </div>
+      <div class="player-slot">
+        <div class="label">White</div>
+        <div class="name empty" id="p2Name">Empty</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rules-section">
+    <div class="rules-title">House Rules</div>
+
+    <div class="rule-row">
+      <div>
+        <div class="rule-label">Force Jump</div>
+        <div class="rule-desc">Must capture if a jump is available</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="ruleForceJump" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="rule-row">
+      <div>
+        <div class="rule-label">Multi-Jump</div>
+        <div class="rule-desc">Chain multiple captures in one turn</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="ruleMultiJump" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="rule-row">
+      <div>
+        <div class="rule-label">King Fly</div>
+        <div class="rule-desc">Kings can move any distance diagonally</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="ruleKingFly">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="rule-row">
+      <div>
+        <div class="rule-label">Backward Capture</div>
+        <div class="rule-desc">Regular pieces can jump backward to capture</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="ruleBackCapture">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:12px; margin-top:8px;">
+    <button class="btn small" onclick="goMenu()">Back</button>
+    <button class="btn small" id="startBtn" style="display:none;" onclick="hostStartGame()">Start Game</button>
+  </div>
+</div>
+
+<!-- JOIN -->
+<div id="joinScreen" class="screen">
+  <div class="logo" style="font-size:clamp(1.6rem,5vw,2.4rem);">Join Party</div>
+  <div class="input-group">
+    <label>Enter Room Code</label>
+    <input id="joinCodeInput" maxlength="5" placeholder="ABCDE" autocomplete="off">
+  </div>
+  <div style="display:flex; gap:12px; margin-top:16px;">
+    <button class="btn small" onclick="goMenu()">Back</button>
+    <button class="btn small" onclick="joinParty()">Join</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="gameScreen" class="screen">
+  <div class="game-header">
+    <div class="gh-player" id="ghRed">
+      <div class="gh-piece red-p"></div>
+      <div>Red <span class="gh-count" id="redCount">(12)</span></div>
+    </div>
+    <div class="gh-player" id="ghWhite">
+      <div class="gh-piece cream-p"></div>
+      <div>White <span class="gh-count" id="whiteCount">(12)</span></div>
+    </div>
+  </div>
+  <div class="turn-banner" id="turnBanner">Your turn</div>
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+  <button class="btn small" style="margin-top:10px;" onclick="forfeit()">Forfeit</button>
+
+  <div class="result-overlay" id="resultOverlay">
+    <div class="result-text" id="resultText">Victory!</div>
+    <div class="result-sub" id="resultSub"></div>
+    <button class="btn" onclick="goMenu()">Back to Menu</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyD1pJijG7HTGBs4hP4ualcNJco6jzAOdBk",
+  authDomain:"fortuna-64c00.firebaseapp.com",
+  databaseURL:"https://fortuna-64c00-default-rtdb.firebaseio.com",
+  projectId:"fortuna-64c00",
+  storageBucket:"fortuna-64c00.appspot.com",
+  messagingSenderId:"137938675590",
+  appId:"1:137938675590:web:d7b3e3e8f5a8e3b4c5d6e7"
+});
+const db = firebase.database();
+
+/* ───── STATE ───── */
+let roomCode = null;
+let roomRef = null;
+let myColor = null; // 'red' or 'white'
+let isHost = false;
+let board = []; // 8x8: null, {color:'red'|'white', king:false}
+let selected = null; // {r,c}
+let validMoves = []; // [{r,c, jumps:[{r,c}]}]
+let currentTurn = 'red';
+let chainPiece = null; // for multi-jump: {r,c} of piece still jumping
+let rules = { forceJump:true, multiJump:true, kingFly:false, backCapture:false };
+let gameActive = false;
+let listeners = [];
+
+/* ───── UTILS ───── */
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c = '';
+  for(let i=0;i<5;i++) c += chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goMenu() {
+  cleanup();
+  showScreen('menuScreen');
+}
+
+function cleanup() {
+  listeners.forEach(l=>l());
+  listeners = [];
+  if(roomRef && !gameActive) {
+    // Don't delete active games
+  }
+  roomCode = null; roomRef = null; myColor = null; isHost = false;
+  gameActive = false; selected = null; validMoves = []; chainPiece = null;
+  document.getElementById('resultOverlay').classList.remove('active');
+}
+
+/* ───── CREATE PARTY ───── */
+function showCreate() {
+  roomCode = genCode();
+  isHost = true;
+  myColor = 'red';
+  showScreen('partyScreen');
+  document.getElementById('partyCode').textContent = roomCode;
+  document.getElementById('partyStatus').textContent = 'Waiting for opponent…';
+  document.getElementById('p1Name').textContent = 'You (Host)';
+  document.getElementById('p1Name').classList.remove('empty');
+  document.getElementById('p2Name').textContent = 'Empty';
+  document.getElementById('p2Name').classList.add('empty');
+  document.getElementById('startBtn').style.display = 'none';
+
+  // Enable rule toggles for host
+  document.querySelectorAll('.rules-section input').forEach(i=>i.disabled=false);
+
+  roomRef = db.ref('checkers/' + roomCode);
+  roomRef.set({
+    host: true,
+    players: { red: 'Host', white: null },
+    rules: readRulesFromUI(),
+    state: null,
+    status: 'waiting'
+  });
+
+  // Listen for joiner
+  const pRef = roomRef.child('players/white');
+  const cb = pRef.on('value', snap => {
+    if(snap.val()) {
+      document.getElementById('p2Name').textContent = 'Player 2';
+      document.getElementById('p2Name').classList.remove('empty');
+      document.getElementById('partyStatus').textContent = 'Opponent joined! Start when ready.';
+      document.getElementById('startBtn').style.display = '';
+      toast('A player joined!');
+    }
+  });
+  listeners.push(()=>pRef.off('value', cb));
+
+  // Listen for game start (in case)
+  const sRef = roomRef.child('status');
+  const cb2 = sRef.on('value', snap => {
+    if(snap.val() === 'playing') {
+      roomRef.child('rules').once('value', rs => {
+        rules = rs.val() || rules;
+        roomRef.child('state').once('value', ss => {
+          loadGameState(ss.val());
+          showScreen('gameScreen');
+          gameActive = true;
+          listenForUpdates();
+        });
+      });
+    }
+  });
+  listeners.push(()=>sRef.off('value', cb2));
+
+  // Cleanup on disconnect
+  roomRef.onDisconnect().remove();
+}
+
+function readRulesFromUI() {
+  return {
+    forceJump: document.getElementById('ruleForceJump').checked,
+    multiJump: document.getElementById('ruleMultiJump').checked,
+    kingFly: document.getElementById('ruleKingFly').checked,
+    backCapture: document.getElementById('ruleBackCapture').checked
+  };
+}
+
+function hostStartGame() {
+  const r = readRulesFromUI();
+  const initBoard = createInitialBoard();
+  roomRef.update({
+    rules: r,
+    status: 'playing',
+    state: {
+      board: boardToFB(initBoard),
+      turn: 'red',
+      chain: null,
+      winner: null
+    }
+  });
+}
+
+/* ───── JOIN PARTY ───── */
+function showJoin() {
+  showScreen('joinScreen');
+  document.getElementById('joinCodeInput').value = '';
+  setTimeout(()=>document.getElementById('joinCodeInput').focus(), 100);
+}
+
+function joinParty() {
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if(code.length < 3) { toast('Enter a valid code'); return; }
+  roomCode = code;
+  roomRef = db.ref('checkers/' + roomCode);
+  roomRef.once('value', snap => {
+    if(!snap.exists()) { toast('Room not found!'); return; }
+    const data = snap.val();
+    if(data.players && data.players.white) { toast('Room is full!'); return; }
+
+    isHost = false;
+    myColor = 'white';
+    roomRef.child('players/white').set('Player2');
+
+    // Show lobby while waiting
+    showScreen('partyScreen');
+    document.getElementById('partyCode').textContent = roomCode;
+    document.getElementById('p1Name').textContent = 'Host';
+    document.getElementById('p1Name').classList.remove('empty');
+    document.getElementById('p2Name').textContent = 'You';
+    document.getElementById('p2Name').classList.remove('empty');
+    document.getElementById('partyStatus').textContent = 'Waiting for host to start…';
+    document.getElementById('startBtn').style.display = 'none';
+
+    // Show rules (disabled for joiner)
+    if(data.rules) {
+      document.getElementById('ruleForceJump').checked = data.rules.forceJump;
+      document.getElementById('ruleMultiJump').checked = data.rules.multiJump;
+      document.getElementById('ruleKingFly').checked = data.rules.kingFly;
+      document.getElementById('ruleBackCapture').checked = data.rules.backCapture;
+    }
+    document.querySelectorAll('.rules-section input').forEach(i=>i.disabled=true);
+
+    // Listen for game start
+    const sRef = roomRef.child('status');
+    const cb = sRef.on('value', snap => {
+      if(snap.val() === 'playing') {
+        roomRef.child('rules').once('value', rs => {
+          rules = rs.val() || rules;
+          roomRef.child('state').once('value', ss => {
+            loadGameState(ss.val());
+            showScreen('gameScreen');
+            gameActive = true;
+            listenForUpdates();
+          });
+        });
+      }
+    });
+    listeners.push(()=>sRef.off('value', cb));
+  });
+}
+
+/* ───── BOARD LOGIC ───── */
+function createInitialBoard() {
+  const b = [];
+  for(let r=0;r<8;r++) {
+    b[r] = [];
+    for(let c=0;c<8;c++) {
+      if((r+c)%2===1) {
+        if(r < 3) b[r][c] = {color:'white', king:false};
+        else if(r > 4) b[r][c] = {color:'red', king:false};
+        else b[r][c] = null;
+      } else {
+        b[r][c] = null;
+      }
+    }
+  }
+  return b;
+}
+
+function boardToFB(b) {
+  const flat = [];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+    if(b[r][c]) flat.push({r,c,color:b[r][c].color,king:b[r][c].king});
+  }
+  return flat;
+}
+
+function fbToBoard(flat) {
+  const b = [];
+  for(let r=0;r<8;r++) { b[r]=[]; for(let c=0;c<8;c++) b[r][c]=null; }
+  if(flat) flat.forEach(p => { b[p.r][p.c] = {color:p.color, king:p.king}; });
+  return b;
+}
+
+function loadGameState(state) {
+  board = fbToBoard(state.board);
+  currentTurn = state.turn;
+  chainPiece = state.chain || null;
+  selected = null;
+  validMoves = [];
+  renderBoard();
+  updateHeader();
+  if(state.winner) {
+    showResult(state.winner);
+  }
+}
+
+/* ───── MOVE LOGIC ───── */
+function getMovesForPiece(b, r, c, onlyJumps) {
+  const p = b[r][c];
+  if(!p) return [];
+  const moves = [];
+  const dirs = [];
+
+  if(p.king) {
+    dirs.push([-1,-1],[-1,1],[1,-1],[1,1]);
+  } else if(p.color === 'red') {
+    dirs.push([-1,-1],[-1,1]); // red moves up
+    if(rules.backCapture) dirs.push([1,-1],[1,1]);
+  } else {
+    dirs.push([1,-1],[1,1]); // white moves down
+    if(rules.backCapture) dirs.push([-1,-1],[-1,1]);
+  }
+
+  // Forward dirs for non-jump moves (always forward only for regular pieces, all for kings)
+  const moveDirs = p.king ? [[-1,-1],[-1,1],[1,-1],[1,1]] :
+    (p.color === 'red' ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]]);
+
+  if(rules.kingFly && p.king) {
+    // Flying king: slide any distance
+    for(const [dr,dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+      let jumped = null;
+      for(let dist=1; dist<8; dist++) {
+        const nr = r+dr*dist, nc = c+dc*dist;
+        if(nr<0||nr>7||nc<0||nc>7) break;
+        const target = b[nr][nc];
+        if(target) {
+          if(target.color === p.color) break; // blocked by own piece
+          if(jumped) break; // can't jump two
+          jumped = {r:nr,c:nc};
+        } else {
+          if(jumped) {
+            moves.push({r:nr, c:nc, jumps:[jumped]});
+          } else if(!onlyJumps) {
+            moves.push({r:nr, c:nc, jumps:[]});
+          }
+        }
+      }
+    }
+  } else {
+    // Normal jumps
+    for(const [dr,dc] of dirs) {
+      const mr = r+dr, mc = c+dc;
+      const jr = r+dr*2, jc = c+dc*2;
+      if(jr>=0&&jr<8&&jc>=0&&jc<8 && b[mr][mc] && b[mr][mc].color!==p.color && !b[jr][jc]) {
+        moves.push({r:jr, c:jc, jumps:[{r:mr,c:mc}]});
+      }
+    }
+    // Normal moves
+    if(!onlyJumps) {
+      for(const [dr,dc] of moveDirs) {
+        const nr = r+dr, nc = c+dc;
+        if(nr>=0&&nr<8&&nc>=0&&nc<8 && !b[nr][nc]) {
+          moves.push({r:nr, c:nc, jumps:[]});
+        }
+      }
+    }
+  }
+  return moves;
+}
+
+function getAllMoves(b, color) {
+  const all = [];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+    if(b[r][c] && b[r][c].color === color) {
+      const moves = getMovesForPiece(b, r, c, false);
+      moves.forEach(m => all.push({from:{r,c}, ...m}));
+    }
+  }
+  return all;
+}
+
+function hasJumps(b, color) {
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+    if(b[r][c] && b[r][c].color === color) {
+      const moves = getMovesForPiece(b, r, c, true);
+      if(moves.some(m=>m.jumps.length>0)) return true;
+    }
+  }
+  return false;
+}
+
+function pieceHasJump(b, r, c) {
+  return getMovesForPiece(b, r, c, true).some(m=>m.jumps.length>0);
+}
+
+/* ───── RENDER ───── */
+function renderBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  // If I'm white, flip the board so my pieces are at the bottom
+  const flip = myColor === 'white';
+
+  for(let vi=0;vi<8;vi++) {
+    for(let vj=0;vj<8;vj++) {
+      const r = flip ? 7-vi : vi;
+      const c = flip ? 7-vj : vj;
+
+      const cell = document.createElement('div');
+      cell.className = 'cell ' + ((r+c)%2===0?'light':'dark');
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+
+      // Highlight valid moves
+      const isValid = validMoves.find(m=>m.r===r&&m.c===c);
+      if(isValid) {
+        cell.classList.add('highlight');
+        cell.onclick = () => executeMove(r, c);
+      }
+
+      // Selected
+      if(selected && selected.r===r && selected.c===c) {
+        cell.classList.add('selected');
+      }
+
+      // Piece
+      const p = board[r][c];
+      if(p) {
+        const piece = document.createElement('div');
+        piece.className = 'piece ' + p.color + (p.king?' king':'');
+        piece.onclick = (e) => { e.stopPropagation(); selectPiece(r, c); };
+        cell.appendChild(piece);
+      }
+
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+function updateHeader() {
+  let redC=0, whiteC=0;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+    if(board[r][c]) {
+      if(board[r][c].color==='red') redC++; else whiteC++;
+    }
+  }
+  document.getElementById('redCount').textContent = `(${redC})`;
+  document.getElementById('whiteCount').textContent = `(${whiteC})`;
+
+  document.getElementById('ghRed').classList.toggle('gh-active', currentTurn==='red');
+  document.getElementById('ghWhite').classList.toggle('gh-active', currentTurn==='white');
+
+  const isMyTurn = currentTurn === myColor;
+  const banner = document.getElementById('turnBanner');
+  if(chainPiece) {
+    banner.textContent = isMyTurn ? 'Continue jumping!' : 'Opponent is jumping…';
+  } else {
+    banner.textContent = isMyTurn ? 'Your turn' : "Opponent's turn";
+  }
+}
+
+/* ───── INTERACTION ───── */
+function selectPiece(r, c) {
+  if(currentTurn !== myColor || !gameActive) return;
+  const p = board[r][c];
+  if(!p || p.color !== myColor) return;
+
+  // If in chain, can only move the chain piece
+  if(chainPiece && (chainPiece.r !== r || chainPiece.c !== c)) return;
+
+  selected = {r, c};
+
+  // Get moves
+  let moves;
+  if(chainPiece) {
+    // Only jumps for chain piece
+    moves = getMovesForPiece(board, r, c, true);
+  } else {
+    moves = getMovesForPiece(board, r, c, false);
+    // Force jump: if any piece has a jump, must jump
+    if(rules.forceJump && hasJumps(board, myColor)) {
+      moves = moves.filter(m => m.jumps.length > 0);
+      // Also can only select pieces that have jumps
+      if(moves.length === 0 && pieceHasJump(board, r, c) === false) {
+        // This piece has no jumps but others do — deselect
+        selected = null;
+        validMoves = [];
+        renderBoard();
+        toast('You must jump!');
+        return;
+      }
+    }
+  }
+
+  validMoves = moves;
+  renderBoard();
+}
+
+function executeMove(toR, toC) {
+  const move = validMoves.find(m=>m.r===toR&&m.c===toC);
+  if(!move) return;
+
+  const fromR = selected.r, fromC = selected.c;
+  const piece = board[fromR][fromC];
+
+  // Move piece
+  board[toR][toC] = piece;
+  board[fromR][fromC] = null;
+
+  // Remove jumped pieces
+  move.jumps.forEach(j => { board[j.r][j.c] = null; });
+
+  // King promotion
+  const wasKing = piece.king;
+  if(piece.color === 'red' && toR === 0) piece.king = true;
+  if(piece.color === 'white' && toR === 7) piece.king = true;
+
+  // Check for multi-jump
+  let newChain = null;
+  if(move.jumps.length > 0 && rules.multiJump) {
+    // If just promoted, no more jumping (standard rules)
+    if(!wasKing && piece.king) {
+      // newly kinged — turn ends
+    } else {
+      const moreJumps = getMovesForPiece(board, toR, toC, true);
+      if(moreJumps.length > 0) {
+        newChain = {r:toR, c:toC};
+      }
+    }
+  }
+
+  selected = null;
+  validMoves = [];
+
+  if(newChain) {
+    chainPiece = newChain;
+    // Push state but keep the same turn
+    pushState(false);
+    renderBoard();
+    updateHeader();
+    // Auto-select the chain piece
+    selectPiece(newChain.r, newChain.c);
+  } else {
+    chainPiece = null;
+    // Switch turns
+    const nextTurn = currentTurn === 'red' ? 'white' : 'red';
+    currentTurn = nextTurn;
+    pushState(true);
+
+    // Check win
+    checkWin();
+    renderBoard();
+    updateHeader();
+  }
+}
+
+function pushState(turnChanged) {
+  if(!roomRef) return;
+  const winner = getWinner();
+  roomRef.child('state').set({
+    board: boardToFB(board),
+    turn: currentTurn,
+    chain: chainPiece,
+    winner: winner
+  });
+}
+
+function getWinner() {
+  let redC=0, whiteC=0;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+    if(board[r][c]) { if(board[r][c].color==='red') redC++; else whiteC++; }
+  }
+  if(redC===0) return 'white';
+  if(whiteC===0) return 'red';
+
+  // Check if current player has moves
+  const moves = getAllMoves(board, currentTurn);
+  if(moves.length===0) return currentTurn==='red'?'white':'red';
+
+  return null;
+}
+
+function checkWin() {
+  const w = getWinner();
+  if(w) showResult(w);
+}
+
+function showResult(winner) {
+  gameActive = false;
+  const overlay = document.getElementById('resultOverlay');
+  overlay.classList.add('active');
+  if(winner === myColor) {
+    document.getElementById('resultText').textContent = 'Victory!';
+    document.getElementById('resultSub').textContent = 'You captured all enemy pieces.';
+  } else if(winner === 'forfeit_' + myColor) {
+    document.getElementById('resultText').textContent = 'Opponent Forfeited';
+    document.getElementById('resultSub').textContent = 'You win!';
+  } else if(winner && winner.startsWith('forfeit_')) {
+    document.getElementById('resultText').textContent = 'You Forfeited';
+    document.getElementById('resultSub').textContent = '';
+  } else {
+    document.getElementById('resultText').textContent = 'Defeat';
+    document.getElementById('resultSub').textContent = 'Better luck next time.';
+  }
+}
+
+function forfeit() {
+  if(!gameActive || !roomRef) return;
+  const winner = myColor === 'red' ? 'white' : 'red';
+  roomRef.child('state/winner').set('forfeit_' + (myColor === 'red' ? 'white' : 'red'));
+  // We treat forfeit as the other player winning
+  showResult('forfeit_' + winner);
+}
+
+/* ───── FIREBASE LISTENER ───── */
+function listenForUpdates() {
+  const stRef = roomRef.child('state');
+  const cb = stRef.on('value', snap => {
+    const state = snap.val();
+    if(!state) return;
+
+    // Only apply if it's not our local push
+    // We apply everything from Firebase to stay in sync
+    board = fbToBoard(state.board);
+    currentTurn = state.turn;
+    chainPiece = state.chain || null;
+    selected = null;
+    validMoves = [];
+
+    renderBoard();
+    updateHeader();
+
+    if(state.winner) {
+      showResult(state.winner);
+    }
+  });
+  listeners.push(()=>stRef.off('value', cb));
+}
+</script>
+</body>
+</html>
