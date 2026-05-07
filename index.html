@@ -46,7 +46,7 @@ body {
 }
 
 /* ───── SCREENS ───── */
-.screen { display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; position:absolute; top:0; left:0; padding:20px; }
+.screen { display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; position:absolute; top:0; left:0; padding:20px; overflow-y:auto; }
 .screen.active { display:flex; }
 
 /* ───── MENU ───── */
@@ -94,6 +94,41 @@ body {
 .btn.red { border-color: var(--red); color: var(--red); }
 .btn.red:hover { background: var(--red); color: var(--cream); border-color: var(--red); }
 .btn.small { font-size: 0.75rem; padding: 10px 18px; }
+.btn.featured { border-color: var(--gold); color: var(--gold-bright); box-shadow: 0 0 20px rgba(201,168,76,0.15); }
+
+/* ───── AI SCREEN ───── */
+#aiScreen { gap: 20px; }
+.difficulty-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(380px, 90vw);
+}
+.diff-card {
+  border: 2px solid var(--gold-dim);
+  background: var(--bg2);
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.diff-card:hover { border-color: var(--gold); background: var(--bg3); transform: translateX(2px); }
+.diff-card.active { border-color: var(--gold-bright); background: var(--bg3); box-shadow: 0 0 24px rgba(201,168,76,0.18); }
+.diff-icon {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 1.6rem;
+  color: var(--gold);
+  width: 42px; height: 42px;
+  border: 1px solid var(--gold-dim);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.diff-card.active .diff-icon { color: var(--gold-bright); border-color: var(--gold); }
+.diff-name { font-family:'Cinzel',serif; font-weight:700; color:var(--gold); font-size:1rem; letter-spacing:0.1em; text-transform:uppercase; }
+.diff-desc { font-size:0.78rem; color:var(--text-dim); margin-top:3px; font-style:italic; }
 
 /* ───── PARTY SCREEN ───── */
 #partyScreen { gap: 20px; }
@@ -249,6 +284,20 @@ body {
   min-height: 1.4em;
   letter-spacing: 0.05em;
 }
+.turn-banner.thinking::after {
+  content: '';
+  display: inline-block;
+  width: 8px; height: 8px;
+  margin-left: 8px;
+  background: var(--gold);
+  border-radius: 50%;
+  animation: think 1.2s ease-in-out infinite;
+  vertical-align: middle;
+}
+@keyframes think {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
 
 /* Board */
 .board-wrap {
@@ -284,6 +333,8 @@ body {
   animation: pulse 1.2s ease-in-out infinite;
 }
 .cell.selected { box-shadow: inset 0 0 0 3px var(--gold-bright); }
+.cell.ai-from { box-shadow: inset 0 0 0 3px rgba(232,201,90,0.5); }
+.cell.ai-to { box-shadow: inset 0 0 0 3px var(--gold-bright); }
 
 @keyframes pulse { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.3);opacity:1} }
 
@@ -368,8 +419,90 @@ body {
   <div class="logo">Checkers</div>
   <div class="logo-sub">Classic Board Game</div>
   <div class="menu-btns">
+    <button class="btn featured" onclick="showAI()">Play vs AI</button>
     <button class="btn" onclick="showCreate()">Create Party</button>
     <button class="btn" onclick="showJoin()">Join Party</button>
+  </div>
+</div>
+
+<!-- AI SETUP -->
+<div id="aiScreen" class="screen">
+  <div class="logo" style="font-size:clamp(1.6rem,5vw,2.4rem);">Choose Opponent</div>
+  <div class="difficulty-grid">
+    <div class="diff-card active" data-diff="easy" onclick="selectDifficulty('easy')">
+      <div class="diff-icon">I</div>
+      <div>
+        <div class="diff-name">Novice</div>
+        <div class="diff-desc">Plays casually — makes occasional mistakes</div>
+      </div>
+    </div>
+    <div class="diff-card" data-diff="medium" onclick="selectDifficulty('medium')">
+      <div class="diff-icon">II</div>
+      <div>
+        <div class="diff-name">Adept</div>
+        <div class="diff-desc">Thinks ahead, defends well</div>
+      </div>
+    </div>
+    <div class="diff-card" data-diff="hard" onclick="selectDifficulty('hard')">
+      <div class="diff-icon">III</div>
+      <div>
+        <div class="diff-name">Master</div>
+        <div class="diff-desc">Deep search — plays to win</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rules-section">
+    <div class="rules-title">House Rules</div>
+
+    <div class="rule-row">
+      <div>
+        <div class="rule-label">Force Jump</div>
+        <div class="rule-desc">Must capture if a jump is available</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="aiRuleForceJump" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="rule-row">
+      <div>
+        <div class="rule-label">Multi-Jump</div>
+        <div class="rule-desc">Chain multiple captures in one turn</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="aiRuleMultiJump" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="rule-row">
+      <div>
+        <div class="rule-label">King Fly</div>
+        <div class="rule-desc">Kings can move any distance diagonally</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="aiRuleKingFly">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="rule-row">
+      <div>
+        <div class="rule-label">Backward Capture</div>
+        <div class="rule-desc">Regular pieces can jump backward to capture</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="aiRuleBackCapture">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:12px; margin-top:8px;">
+    <button class="btn small" onclick="goMenu()">Back</button>
+    <button class="btn small" onclick="startAIGame()">Start Game</button>
   </div>
 </div>
 
@@ -514,6 +647,11 @@ let rules = { forceJump:true, multiJump:true, kingFly:false, backCapture:false }
 let gameActive = false;
 let listeners = [];
 
+// AI state
+let vsAI = false;
+let aiDifficulty = 'easy';
+let aiThinking = false;
+
 /* ───── UTILS ───── */
 function genCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -547,14 +685,57 @@ function cleanup() {
   }
   roomCode = null; roomRef = null; myColor = null; isHost = false;
   gameActive = false; selected = null; validMoves = []; chainPiece = null;
+  vsAI = false; aiThinking = false;
   document.getElementById('resultOverlay').classList.remove('active');
+  document.getElementById('turnBanner').classList.remove('thinking');
+}
+
+/* ───── AI MODE SETUP ───── */
+function showAI() {
+  showScreen('aiScreen');
+  // Default to easy
+  selectDifficulty(aiDifficulty || 'easy');
+}
+
+function selectDifficulty(d) {
+  aiDifficulty = d;
+  document.querySelectorAll('.diff-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.diff === d);
+  });
+}
+
+function readAIRulesFromUI() {
+  return {
+    forceJump: document.getElementById('aiRuleForceJump').checked,
+    multiJump: document.getElementById('aiRuleMultiJump').checked,
+    kingFly: document.getElementById('aiRuleKingFly').checked,
+    backCapture: document.getElementById('aiRuleBackCapture').checked
+  };
+}
+
+function startAIGame() {
+  cleanup();
+  vsAI = true;
+  myColor = 'red';      // human plays red (bottom)
+  rules = readAIRulesFromUI();
+  board = createInitialBoard();
+  currentTurn = 'red';
+  chainPiece = null;
+  selected = null;
+  validMoves = [];
+  gameActive = true;
+  showScreen('gameScreen');
+  renderBoard();
+  updateHeader();
 }
 
 /* ───── CREATE PARTY ───── */
 function showCreate() {
+  cleanup();
   roomCode = genCode();
   isHost = true;
   myColor = 'red';
+  vsAI = false;
   showScreen('partyScreen');
   document.getElementById('partyCode').textContent = roomCode;
   document.getElementById('partyStatus').textContent = 'Waiting for opponent…';
@@ -565,7 +746,7 @@ function showCreate() {
   document.getElementById('startBtn').style.display = 'none';
 
   // Enable rule toggles for host
-  document.querySelectorAll('.rules-section input').forEach(i=>i.disabled=false);
+  document.querySelectorAll('#partyScreen .rules-section input').forEach(i=>i.disabled=false);
 
   roomRef = db.ref('checkers/' + roomCode);
   roomRef.set({
@@ -636,6 +817,7 @@ function hostStartGame() {
 
 /* ───── JOIN PARTY ───── */
 function showJoin() {
+  cleanup();
   showScreen('joinScreen');
   document.getElementById('joinCodeInput').value = '';
   setTimeout(()=>document.getElementById('joinCodeInput').focus(), 100);
@@ -653,6 +835,7 @@ function joinParty() {
 
     isHost = false;
     myColor = 'white';
+    vsAI = false;
     roomRef.child('players/white').set('Player2');
 
     // Show lobby while waiting
@@ -672,7 +855,7 @@ function joinParty() {
       document.getElementById('ruleKingFly').checked = data.rules.kingFly;
       document.getElementById('ruleBackCapture').checked = data.rules.backCapture;
     }
-    document.querySelectorAll('.rules-section input').forEach(i=>i.disabled=true);
+    document.querySelectorAll('#partyScreen .rules-section input').forEach(i=>i.disabled=true);
 
     // Listen for game start
     const sRef = roomRef.child('status');
@@ -726,6 +909,17 @@ function fbToBoard(flat) {
   return b;
 }
 
+function cloneBoard(b) {
+  const nb = [];
+  for(let r=0;r<8;r++) {
+    nb[r] = [];
+    for(let c=0;c<8;c++) {
+      nb[r][c] = b[r][c] ? {color:b[r][c].color, king:b[r][c].king} : null;
+    }
+  }
+  return nb;
+}
+
 function loadGameState(state) {
   board = fbToBoard(state.board);
   currentTurn = state.turn;
@@ -739,7 +933,9 @@ function loadGameState(state) {
   }
 }
 
-/* ───── MOVE LOGIC ───── */
+/* ───── MOVE LOGIC ─────
+   getMovesForPiece works on any board reference (not just global) so the AI
+   can run search without disturbing the displayed game. */
 function getMovesForPiece(b, r, c, onlyJumps) {
   const p = b[r][c];
   if(!p) return [];
@@ -833,6 +1029,7 @@ function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   // If I'm white, flip the board so my pieces are at the bottom
+  // (in AI mode myColor === 'red' so no flip — human at bottom)
   const flip = myColor === 'white';
 
   for(let vi=0;vi<8;vi++) {
@@ -886,16 +1083,28 @@ function updateHeader() {
 
   const isMyTurn = currentTurn === myColor;
   const banner = document.getElementById('turnBanner');
-  if(chainPiece) {
-    banner.textContent = isMyTurn ? 'Continue jumping!' : 'Opponent is jumping…';
+  banner.classList.toggle('thinking', vsAI && aiThinking);
+
+  if(vsAI) {
+    if(aiThinking) {
+      banner.textContent = 'AI is thinking';
+    } else if(chainPiece) {
+      banner.textContent = isMyTurn ? 'Continue jumping!' : 'AI is jumping…';
+    } else {
+      banner.textContent = isMyTurn ? 'Your turn' : "AI's turn";
+    }
   } else {
-    banner.textContent = isMyTurn ? 'Your turn' : "Opponent's turn";
+    if(chainPiece) {
+      banner.textContent = isMyTurn ? 'Continue jumping!' : 'Opponent is jumping…';
+    } else {
+      banner.textContent = isMyTurn ? 'Your turn' : "Opponent's turn";
+    }
   }
 }
 
 /* ───── INTERACTION ───── */
 function selectPiece(r, c) {
-  if(currentTurn !== myColor || !gameActive) return;
+  if(currentTurn !== myColor || !gameActive || aiThinking) return;
   const p = board[r][c];
   if(!p || p.color !== myColor) return;
 
@@ -957,7 +1166,7 @@ function executeMove(toR, toC) {
       // newly kinged — turn ends
     } else {
       const moreJumps = getMovesForPiece(board, toR, toC, true);
-      if(moreJumps.length > 0) {
+      if(moreJumps.some(m=>m.jumps.length>0)) {
         newChain = {r:toR, c:toC};
       }
     }
@@ -968,8 +1177,7 @@ function executeMove(toR, toC) {
 
   if(newChain) {
     chainPiece = newChain;
-    // Push state but keep the same turn
-    pushState(false);
+    if(!vsAI) pushState(false);
     renderBoard();
     updateHeader();
     // Auto-select the chain piece
@@ -977,14 +1185,22 @@ function executeMove(toR, toC) {
   } else {
     chainPiece = null;
     // Switch turns
-    const nextTurn = currentTurn === 'red' ? 'white' : 'red';
-    currentTurn = nextTurn;
-    pushState(true);
+    currentTurn = currentTurn === 'red' ? 'white' : 'red';
+    if(!vsAI) pushState(true);
 
     // Check win
-    checkWin();
+    if(checkWin()) {
+      renderBoard();
+      updateHeader();
+      return;
+    }
     renderBoard();
     updateHeader();
+
+    // Trigger AI if it's now AI's turn
+    if(vsAI && currentTurn !== myColor && gameActive) {
+      scheduleAITurn();
+    }
   }
 }
 
@@ -1016,16 +1232,19 @@ function getWinner() {
 
 function checkWin() {
   const w = getWinner();
-  if(w) showResult(w);
+  if(w) { showResult(w); return true; }
+  return false;
 }
 
 function showResult(winner) {
   gameActive = false;
+  aiThinking = false;
+  document.getElementById('turnBanner').classList.remove('thinking');
   const overlay = document.getElementById('resultOverlay');
   overlay.classList.add('active');
   if(winner === myColor) {
     document.getElementById('resultText').textContent = 'Victory!';
-    document.getElementById('resultSub').textContent = 'You captured all enemy pieces.';
+    document.getElementById('resultSub').textContent = vsAI ? 'You defeated the AI.' : 'You captured all enemy pieces.';
   } else if(winner === 'forfeit_' + myColor) {
     document.getElementById('resultText').textContent = 'Opponent Forfeited';
     document.getElementById('resultSub').textContent = 'You win!';
@@ -1034,15 +1253,19 @@ function showResult(winner) {
     document.getElementById('resultSub').textContent = '';
   } else {
     document.getElementById('resultText').textContent = 'Defeat';
-    document.getElementById('resultSub').textContent = 'Better luck next time.';
+    document.getElementById('resultSub').textContent = vsAI ? 'The AI got the better of you.' : 'Better luck next time.';
   }
 }
 
 function forfeit() {
-  if(!gameActive || !roomRef) return;
+  if(!gameActive) return;
+  if(vsAI) {
+    showResult('forfeit_white'); // human (red) forfeits => white wins
+    return;
+  }
+  if(!roomRef) return;
   const winner = myColor === 'red' ? 'white' : 'red';
-  roomRef.child('state/winner').set('forfeit_' + (myColor === 'red' ? 'white' : 'red'));
-  // We treat forfeit as the other player winning
+  roomRef.child('state/winner').set('forfeit_' + winner);
   showResult('forfeit_' + winner);
 }
 
@@ -1069,6 +1292,270 @@ function listenForUpdates() {
     }
   });
   listeners.push(()=>stRef.off('value', cb));
+}
+
+/* ─────────────────────────────────────────────
+   AI ENGINE — minimax with alpha-beta pruning
+   ───────────────────────────────────────────── */
+
+// Difficulty controls search depth + randomness
+const AI_CONFIG = {
+  easy:   { depth: 2, randomness: 0.35 },  // shallow + often picks suboptimal
+  medium: { depth: 4, randomness: 0.10 },
+  hard:   { depth: 6, randomness: 0.0  }
+};
+
+// Apply a move to a board (mutates), returns info needed to detect chain.
+// Returns {becameKing:bool, fromR, fromC, toR, toC}
+function applyMove(b, fromR, fromC, toR, toC, jumps) {
+  const piece = b[fromR][fromC];
+  b[toR][toC] = piece;
+  b[fromR][fromC] = null;
+  jumps.forEach(j => { b[j.r][j.c] = null; });
+  const wasKing = piece.king;
+  if(piece.color === 'red' && toR === 0) piece.king = true;
+  if(piece.color === 'white' && toR === 7) piece.king = true;
+  return { becameKing: !wasKing && piece.king };
+}
+
+// Filter moves according to forceJump rule
+function legalMoves(b, color) {
+  const all = getAllMoves(b, color);
+  if(rules.forceJump) {
+    const jumps = all.filter(m => m.jumps.length > 0);
+    if(jumps.length > 0) return jumps;
+  }
+  return all;
+}
+
+// A "ply" for the AI is one complete turn — including any forced/chosen
+// multi-jump chain. We expand all possible chains as separate sequences.
+// Returns array of { sequence: [{from,r,c,jumps}], boardAfter }
+function expandTurns(b, color) {
+  const results = [];
+  const initial = legalMoves(b, color);
+
+  for(const move of initial) {
+    // Try the move; if it was a jump and multi-jump enabled, recurse
+    const nb = cloneBoard(b);
+    const info = applyMove(nb, move.from.r, move.from.c, move.r, move.c, move.jumps);
+
+    const canChain = move.jumps.length > 0 && rules.multiJump && !info.becameKing;
+    if(canChain) {
+      const more = getMovesForPiece(nb, move.r, move.c, true).filter(m => m.jumps.length > 0);
+      if(more.length > 0) {
+        // recurse: chain continues from (move.r, move.c)
+        const subSeqs = expandChain(nb, move.r, move.c, color);
+        for(const sub of subSeqs) {
+          results.push({
+            sequence: [{from:move.from, r:move.r, c:move.c, jumps:move.jumps}, ...sub.sequence],
+            boardAfter: sub.boardAfter
+          });
+        }
+        continue;
+      }
+    }
+    results.push({
+      sequence: [{from:move.from, r:move.r, c:move.c, jumps:move.jumps}],
+      boardAfter: nb
+    });
+  }
+  return results;
+}
+
+function expandChain(b, r, c, color) {
+  const results = [];
+  const more = getMovesForPiece(b, r, c, true).filter(m => m.jumps.length > 0);
+  if(more.length === 0) {
+    return [{ sequence: [], boardAfter: b }];
+  }
+  for(const move of more) {
+    const nb = cloneBoard(b);
+    const info = applyMove(nb, r, c, move.r, move.c, move.jumps);
+    const stop = info.becameKing; // standard rule: newly kinged stops chain
+    if(stop) {
+      results.push({
+        sequence: [{from:{r,c}, r:move.r, c:move.c, jumps:move.jumps}],
+        boardAfter: nb
+      });
+    } else {
+      const subs = expandChain(nb, move.r, move.c, color);
+      for(const sub of subs) {
+        results.push({
+          sequence: [{from:{r,c}, r:move.r, c:move.c, jumps:move.jumps}, ...sub.sequence],
+          boardAfter: nb
+        });
+      }
+    }
+  }
+  return results;
+}
+
+// Heuristic evaluation. Positive = good for white (the AI),
+// negative = good for red (the human).
+function evaluate(b) {
+  let score = 0;
+  let redCount = 0, whiteCount = 0;
+  for(let r=0;r<8;r++) {
+    for(let c=0;c<8;c++) {
+      const p = b[r][c];
+      if(!p) continue;
+      // Base value: 100 per man, 175 per king
+      let v = p.king ? 175 : 100;
+      // Advancement bonus for non-kings (they want to promote)
+      if(!p.king) {
+        if(p.color === 'white') v += r * 4;       // white advances down (r increases)
+        else v += (7 - r) * 4;                    // red advances up
+      }
+      // Center control
+      if(c >= 2 && c <= 5) v += 3;
+      if(r >= 2 && r <= 5) v += 2;
+      // Back-rank defenders (slight bonus while not promoted)
+      if(p.color === 'white' && r === 0) v += 5;
+      if(p.color === 'red' && r === 7) v += 5;
+      // Edge pieces are slightly safer but harder to use
+      if(c === 0 || c === 7) v -= 2;
+
+      if(p.color === 'white') { score += v; whiteCount++; }
+      else { score -= v; redCount++; }
+    }
+  }
+  // Endgame: when ahead in material, prefer to trade (ratio bonus)
+  if(whiteCount + redCount <= 8) {
+    if(whiteCount > redCount) score += 30 * (whiteCount - redCount);
+    else if(redCount > whiteCount) score -= 30 * (redCount - whiteCount);
+  }
+  return score;
+}
+
+// Minimax with alpha-beta. Maximizing player = white (the AI).
+// Returns { score, bestSeq } where bestSeq is the chosen turn sequence at top level.
+function minimax(b, depth, alpha, beta, maximizingColor) {
+  // Terminal / depth check
+  const turnsForMover = expandTurns(b, maximizingColor);
+  if(turnsForMover.length === 0) {
+    // Current player has no moves — they lose
+    return { score: maximizingColor === 'white' ? -100000 : 100000, bestSeq: null };
+  }
+  if(depth === 0) {
+    return { score: evaluate(b), bestSeq: null };
+  }
+
+  let bestSeq = null;
+  if(maximizingColor === 'white') {
+    let best = -Infinity;
+    for(const turn of turnsForMover) {
+      const childScore = minimax(turn.boardAfter, depth - 1, alpha, beta, 'red').score;
+      if(childScore > best) { best = childScore; bestSeq = turn; }
+      alpha = Math.max(alpha, best);
+      if(beta <= alpha) break;
+    }
+    return { score: best, bestSeq };
+  } else {
+    let best = Infinity;
+    for(const turn of turnsForMover) {
+      const childScore = minimax(turn.boardAfter, depth - 1, alpha, beta, 'white').score;
+      if(childScore < best) { best = childScore; bestSeq = turn; }
+      beta = Math.min(beta, best);
+      if(beta <= alpha) break;
+    }
+    return { score: best, bestSeq };
+  }
+}
+
+function pickAITurn() {
+  const cfg = AI_CONFIG[aiDifficulty];
+  const allTurns = expandTurns(board, 'white');
+  if(allTurns.length === 0) return null;
+
+  // On easy/medium, sometimes just pick a random legal turn
+  if(cfg.randomness > 0 && Math.random() < cfg.randomness) {
+    return allTurns[Math.floor(Math.random() * allTurns.length)];
+  }
+
+  // Score every top-level turn at the configured depth, then pick best.
+  // (We do this here rather than relying on minimax's returned bestSeq so
+  // we can break ties randomly for variety.)
+  let bestScore = -Infinity;
+  let bestTurns = [];
+  for(const turn of allTurns) {
+    const res = minimax(turn.boardAfter, cfg.depth - 1, -Infinity, Infinity, 'red');
+    const score = res.score;
+    if(score > bestScore + 0.5) {
+      bestScore = score;
+      bestTurns = [turn];
+    } else if(Math.abs(score - bestScore) < 0.5) {
+      bestTurns.push(turn);
+    }
+  }
+  return bestTurns[Math.floor(Math.random() * bestTurns.length)];
+}
+
+function scheduleAITurn() {
+  if(!gameActive || aiThinking) return;
+  aiThinking = true;
+  updateHeader();
+
+  // Defer with a small delay so the "thinking" UI shows even on instant moves.
+  // Heavier difficulties get more time visually.
+  const delay = aiDifficulty === 'hard' ? 600 : aiDifficulty === 'medium' ? 400 : 250;
+  setTimeout(() => {
+    // Use requestAnimationFrame chain so the UI repaints between heavy work.
+    requestAnimationFrame(() => {
+      try {
+        const turn = pickAITurn();
+        if(!turn) {
+          // AI has no moves — human wins
+          aiThinking = false;
+          showResult('red');
+          return;
+        }
+        playAITurnAnimated(turn.sequence, 0);
+      } catch(e) {
+        console.error('AI error:', e);
+        aiThinking = false;
+        updateHeader();
+      }
+    });
+  }, delay);
+}
+
+// Animate the AI's chain step by step so the human can see what happened.
+function playAITurnAnimated(sequence, idx) {
+  if(!gameActive) { aiThinking = false; updateHeader(); return; }
+  if(idx >= sequence.length) {
+    // Done — switch turn
+    aiThinking = false;
+    chainPiece = null;
+    currentTurn = 'red';
+    if(checkWin()) { renderBoard(); updateHeader(); return; }
+    renderBoard();
+    updateHeader();
+    return;
+  }
+
+  const step = sequence[idx];
+  // Apply this step to the live board
+  const piece = board[step.from.r][step.from.c];
+  board[step.r][step.c] = piece;
+  board[step.from.r][step.from.c] = null;
+  step.jumps.forEach(j => { board[j.r][j.c] = null; });
+  const wasKing = piece.king;
+  if(piece.color === 'red' && step.r === 0) piece.king = true;
+  if(piece.color === 'white' && step.r === 7) piece.king = true;
+
+  // If more steps remain, show a chain marker
+  if(idx < sequence.length - 1) {
+    chainPiece = { r: step.r, c: step.c };
+  } else {
+    chainPiece = null;
+  }
+  renderBoard();
+  updateHeader();
+
+  // Pause between steps
+  const pause = step.jumps.length > 0 ? 450 : 350;
+  setTimeout(() => playAITurnAnimated(sequence, idx + 1), pause);
 }
 </script>
 </body>
